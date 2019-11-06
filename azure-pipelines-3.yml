@@ -1,0 +1,68 @@
+# Docker
+# Build and push an image to Azure Container Registry
+# https://docs.microsoft.com/azure/devops/pipelines/languages/docker
+
+trigger:
+- master
+
+resources:
+- repo: self
+
+variables:
+  # Container registry service connection established during pipeline creation
+  dockerRegistryServiceConnection: '32b63d8b-87a5-4c50-a571-11ea79ac6879'
+  imageRepository: 'azurevotingappredis'
+  containerRegistry: 'dawg89cr.azurecr.io'
+  dockerfilePath: '$(Build.SourcesDirectory)/azure-vote/Dockerfile'
+  tag: '$(Build.BuildId)'
+  
+  # Agent VM image name
+  vmImageName: 'ubuntu-latest'
+
+stages:
+- stage: Build
+  displayName: Build and push stage
+  jobs:  
+  - job: Build
+    displayName: Build
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - task: Docker@2
+      displayName: Build and push an image to container registry
+      inputs:
+        command: buildAndPush
+        repository: $(imageRepository)
+        dockerfile: $(dockerfilePath)
+        containerRegistry: $(dockerRegistryServiceConnection)
+        tags: |
+          $(tag)
+
+- stage: hld_update
+  displayName: ACR to HLD Stage
+  dependsOn: Build
+  condition: succeeded('Build')
+  jobs:
+  - job: hld_update
+    displayName: HLD Update
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - bash: |
+        # Download build.sh
+        curl https://raw.githubusercontent.com/Microsoft/bedrock/master/gitops/azure-devops/build.sh > build.sh
+        chmod +x ./build.sh
+
+        curl https://raw.githubusercontent.com/Microsoft/bedrock/master/gitops/azure-devops/release.sh > release.sh
+        chmod +x ./release.sh
+
+        # Execute release.sh
+        . release.sh
+      displayName: Bash step
+      env:
+        ACCESS_TOKEN_SECRET: $(ACCESS_TOKEN)
+        COMMIT_MESSAGE: Update front end image tag to $(Build.BuildId)
+        SUBCOMPONENT: azure-vote
+        YAML_PATH: azureVoteFront.deployment.imageTag
+        YAML_PATH_VALUE: $(Build.BuildId)
+        REPO: https://github.com/day-jeff/azure-voting-app.git
