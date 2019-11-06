@@ -1,0 +1,6 @@
+subcomponents:
+  azure-vote:
+    config:
+      azureVoteFront:
+        deployment:
+          imageTag: "7509"
