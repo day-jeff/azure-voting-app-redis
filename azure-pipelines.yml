@@ -36,7 +36,7 @@ stages:
   - job: hld_update
     displayName: HLD Update
     pool:
-      vmImage: $(vmImageName)
+      vmImage: 'ubuntu-latest'
     steps:
     - bash: |
         # Download build.sh
