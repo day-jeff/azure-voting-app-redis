@@ -55,4 +55,4 @@ stages:
         SUBCOMPONENT: azure-vote
         YAML_PATH: azureVoteFront.deployment.imageTag
         YAML_PATH_VALUE: $(Build.BuildId)
-        REPO: https://github.com/day-jeff/azure-voting-app-redis
+        REPO: https://github.com/day-jeff/azure-voting-app
